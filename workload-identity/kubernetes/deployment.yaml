@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-identity-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workload-identity-demo
+  template:
+    metadata:
+      labels:
+        app: workload-identity-demo
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: workload-identity-sa
+      containers:
+      - name: demo
+        image: mcr.microsoft.com/azure-cli:latest
+        command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Workload Identity Demo"
+            echo "======================"
+            echo ""
+            echo "Environment variables:"
+            env | grep AZURE
+            echo ""
+            echo "Attempting to list storage containers..."
+            az login --identity
+            az storage container list --account-name ${STORAGE_ACCOUNT_NAME} --auth-mode login
+            echo ""
+            echo "Sleeping to keep container running..."
+            sleep infinity
+        env:
+        - name: STORAGE_ACCOUNT_NAME
+          value: ${STORAGE_ACCOUNT_NAME}

@@ -1,22 +1,11 @@
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 2.0"
-    }
-  }
-}
 
-provider "azurerm" {
-  features {}
+resource "random_string" "random_suffix" {
+  length  = 10
+  upper   = false
+  lower   = true
+  numeric = true
+  special = false
 }
-
-provider "azuread" {}
 
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
@@ -63,7 +52,7 @@ resource "azurerm_federated_identity_credential" "federated_credential" {
 }
 
 resource "azurerm_storage_account" "example" {
-  name                     = var.storage_account_name
+  name                     = "stwi${random_string.random_suffix.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"

@@ -18,6 +18,9 @@ terraform {
 
 provider "azurerm" {
   features {}
+  
+  # Use identity-based authentication for storage operations
+  storage_use_azuread = true
 }
 
 provider "azuread" {}

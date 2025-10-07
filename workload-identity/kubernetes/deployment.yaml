@@ -22,14 +22,22 @@ spec:
           - /bin/bash
           - -c
           - |
+            echo ""
             echo "Workload Identity Demo"
             echo "======================"
             echo ""
             echo "Environment variables:"
             env | grep AZURE
             echo ""
+            echo "Attempting to log in using Workload Identity..."
+            az identity show --ids ${WORKLOAD_IDENTITY_CLIENT_ID} -o tsv
+            az login --identity --client-id ${WORKLOAD_IDENTITY_CLIENT_ID}
+            echo ""
+            echo "Attempting to get access token using federated token..."
+            az login --federated-token "$(cat $AZURE_FEDERATED_TOKEN_FILE)" --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID
+            # az account get-access-token --query accessToken --output tsv
+            echo ""
             echo "Attempting to list storage containers..."
-            az login --identity
             az storage container list --account-name ${STORAGE_ACCOUNT_NAME} --auth-mode login
             echo ""
             echo "Sleeping to keep container running..."
@@ -37,3 +45,5 @@ spec:
         env:
         - name: STORAGE_ACCOUNT_NAME
           value: ${STORAGE_ACCOUNT_NAME}
+        - name: WORKLOAD_IDENTITY_CLIENT_ID
+          value: ${WORKLOAD_IDENTITY_CLIENT_ID}

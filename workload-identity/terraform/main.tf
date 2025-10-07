@@ -57,7 +57,10 @@ resource "azurerm_storage_account" "example" {
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
-
+  
+  # Disable shared key access for better security (required by organization policy)
+  shared_access_key_enabled = false
+  
   tags = var.tags
 }
 

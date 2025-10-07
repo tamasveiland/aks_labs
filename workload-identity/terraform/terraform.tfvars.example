@@ -1,0 +1,28 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and update with your values
+
+# Resource Group Configuration
+resource_group_name = "rg-aks-workload-identity"
+location            = "eastus"
+
+# AKS Configuration
+aks_cluster_name = "aks-workload-identity"
+dns_prefix       = "aks-wi"
+node_count       = 2
+vm_size          = "Standard_D2s_v3"
+
+# Workload Identity Configuration
+workload_identity_name      = "id-workload-identity"
+federated_credential_name   = "federated-credential"
+kubernetes_namespace        = "default"
+kubernetes_service_account  = "workload-identity-sa"
+
+# Storage Account Configuration (must be globally unique, 3-24 lowercase alphanumeric characters)
+storage_account_name = "stwi<add-unique-suffix-here>"
+
+# Tags
+tags = {
+  Environment = "Lab"
+  Purpose     = "WorkloadIdentity"
+  ManagedBy   = "Terraform"
+}

@@ -59,9 +59,9 @@ variable "kubernetes_service_account" {
 }
 
 variable "key_vault_name" {
-  description = "Name of the Azure Key Vault (must be globally unique)"
+  description = "Prefix for the Azure Key Vault name (a random suffix will be appended to ensure global uniqueness)"
   type        = string
-  default     = "kv"
+  default     = "kv-aks-demo"
 }
 
 variable "tags" {

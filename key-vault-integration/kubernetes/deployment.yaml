@@ -39,6 +39,11 @@ spec:
             echo "Listing secrets in Key Vault..."
             az keyvault secret list --vault-name ${KEY_VAULT_NAME} --query "[].{Name:name, Enabled:attributes.enabled}" -o table
             echo ""
+            echo "====================================================================="
+            echo "WARNING: This demo outputs secret values to logs for demonstration"
+            echo "purposes only. In production, NEVER log or print secret values!"
+            echo "====================================================================="
+            echo ""
             echo "Reading secret 'database-connection-string'..."
             az keyvault secret show --vault-name ${KEY_VAULT_NAME} --name database-connection-string --query "value" -o tsv
             echo ""

@@ -83,10 +83,11 @@ resource "azurerm_role_assignment" "keyvault_admin" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# Create sample secrets in Key Vault
+# Create sample secrets in Key Vault (for demonstration purposes only)
+# In production, secrets should be managed securely and not stored in code
 resource "azurerm_key_vault_secret" "database_connection_string" {
   name         = "database-connection-string"
-  value        = "Server=myserver.database.windows.net;Database=mydb;User Id=myuser;Password=P@ssw0rd123;"
+  value        = "Server=myserver.database.windows.net;Database=mydb;User Id=myuser;Password=REPLACE_WITH_ACTUAL_PASSWORD;"
   key_vault_id = azurerm_key_vault.keyvault.id
 
   depends_on = [azurerm_role_assignment.keyvault_admin]
@@ -94,7 +95,7 @@ resource "azurerm_key_vault_secret" "database_connection_string" {
 
 resource "azurerm_key_vault_secret" "api_key" {
   name         = "api-key"
-  value        = "my-secret-api-key-12345"
+  value        = "demo-api-key-replace-in-production"
   key_vault_id = azurerm_key_vault.keyvault.id
 
   depends_on = [azurerm_role_assignment.keyvault_admin]
@@ -102,7 +103,7 @@ resource "azurerm_key_vault_secret" "api_key" {
 
 resource "azurerm_key_vault_secret" "application_secret" {
   name         = "application-secret"
-  value        = "super-secret-value-67890"
+  value        = "demo-secret-value-replace-in-production"
   key_vault_id = azurerm_key_vault.keyvault.id
 
   depends_on = [azurerm_role_assignment.keyvault_admin]

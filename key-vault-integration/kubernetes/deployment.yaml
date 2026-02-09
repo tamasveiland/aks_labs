@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keyvault-demo
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keyvault-demo
+  template:
+    metadata:
+      labels:
+        app: keyvault-demo
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: keyvault-workload-sa
+      containers:
+      - name: demo
+        image: mcr.microsoft.com/azure-cli:latest
+        command:
+          - /bin/bash
+          - -c
+          - |
+            echo ""
+            echo "AKS + Azure Key Vault Integration Demo"
+            echo "======================================="
+            echo ""
+            echo "Environment variables:"
+            env | grep AZURE
+            echo ""
+            echo "Attempting to log in using Workload Identity..."
+            az login --federated-token "$(cat $AZURE_FEDERATED_TOKEN_FILE)" --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID
+            echo ""
+            echo "Successfully authenticated!"
+            echo ""
+            echo "Key Vault URI: ${KEY_VAULT_URI}"
+            echo ""
+            echo "Listing secrets in Key Vault..."
+            az keyvault secret list --vault-name ${KEY_VAULT_NAME} --query "[].{Name:name, Enabled:attributes.enabled}" -o table
+            echo ""
+            echo "Reading secret 'database-connection-string'..."
+            az keyvault secret show --vault-name ${KEY_VAULT_NAME} --name database-connection-string --query "value" -o tsv
+            echo ""
+            echo "Reading secret 'api-key'..."
+            az keyvault secret show --vault-name ${KEY_VAULT_NAME} --name api-key --query "value" -o tsv
+            echo ""
+            echo "Reading secret 'application-secret'..."
+            az keyvault secret show --vault-name ${KEY_VAULT_NAME} --name application-secret --query "value" -o tsv
+            echo ""
+            echo "Successfully retrieved all secrets from Key Vault!"
+            echo ""
+            echo "Sleeping to keep container running..."
+            sleep infinity
+        env:
+        - name: KEY_VAULT_NAME
+          value: ${KEY_VAULT_NAME}
+        - name: KEY_VAULT_URI
+          value: ${KEY_VAULT_URI}

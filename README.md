@@ -14,6 +14,17 @@ Demonstrates how to configure and use Azure AD Workload Identity with AKS using 
 
 **Technologies**: Terraform, AKS, Azure AD Workload Identity, Azure Storage
 
+### 2. [Key Vault Integration](./key-vault-integration/)
+
+Demonstrates how to integrate AKS with Azure Key Vault using Azure AD Workload Identity. This lab covers:
+- Setting up an AKS cluster with OIDC issuer and workload identity enabled
+- Configuring Azure Key Vault with RBAC authorization
+- Creating managed identities with Key Vault access permissions
+- Deploying workloads that securely retrieve secrets from Key Vault without credentials
+- Implementing security best practices for secret management
+
+**Technologies**: Terraform, AKS, Azure AD Workload Identity, Azure Key Vault
+
 ## Prerequisites
 
 To work with these labs, you'll need:

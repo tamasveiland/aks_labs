@@ -1,0 +1,4 @@
+resource_group_name     = "rg-aks-keyvault-integration"
+location                = "eastus"
+aks_cluster_name        = "aks-keyvault-integration"
+key_vault_name          = "kv-unique-suffix"  # Must be globally unique, will have random suffix added

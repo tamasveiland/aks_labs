@@ -14,13 +14,32 @@ Demonstrates how to configure and use Azure AD Workload Identity with AKS using 
 
 **Technologies**: Terraform, AKS, Azure AD Workload Identity, Azure Storage
 
+### 2. [Application Gateway](./application-gateway/)
+
+Demonstrates how to configure Azure Application Gateway with AKS using Terraform.
+
+**Technologies**: Terraform, AKS, Application Gateway, Key Vault
+
+### 3. [GitHub Actions Runner Controller on AKS](./gh-arc-on-aks/)
+
+Deploys an AKS cluster configured to host GitHub Actions Runner Controller (ARC), enabling self-hosted GitHub Actions runners that autoscale on Kubernetes. Built with Azure Developer CLI (`azd`) and Bicep.
+
+- AKS cluster with dedicated autoscaling runner node pool
+- ARC v2 controller and runner scale set via Helm
+- Automatic scale-to-zero when no jobs are queued
+- Post-provisioning automation via azd hooks
+
+**Technologies**: Azure Developer CLI (azd), Bicep, AKS, Helm, GitHub Actions Runner Controller
+
 ## Prerequisites
 
 To work with these labs, you'll need:
 - An active Azure subscription
 - Azure CLI installed and configured
 - Terraform >= 1.0 (for Terraform-based labs)
+- Azure Developer CLI (`azd`) >= 1.x (for azd-based labs)
 - kubectl installed
+- Helm >= 3.x (for Helm-based labs)
 
 ## Getting Started
 

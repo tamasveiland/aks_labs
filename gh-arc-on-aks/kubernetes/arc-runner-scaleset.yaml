@@ -1,0 +1,33 @@
+# Example AutoScalingRunnerSet custom resource
+# This is a reference showing the resulting CR after Helm install.
+# Actual deployment is done via Helm in the post-provision script.
+apiVersion: actions.github.com/v1alpha1
+kind: AutoscalingRunnerSet
+metadata:
+  name: arc-runner-set
+  namespace: arc-runners
+spec:
+  githubConfigUrl: "${GITHUB_CONFIG_URL}"
+  githubConfigSecret: arc-github-secret
+  maxRunners: 5
+  minRunners: 0
+  template:
+    spec:
+      tolerations:
+        - key: "github-runner"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      nodeSelector:
+        github-runner: "true"
+      containers:
+        - name: runner
+          image: ghcr.io/actions/actions-runner:latest
+          command: ["/home/runner/run.sh"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1500m"
+              memory: "2Gi"

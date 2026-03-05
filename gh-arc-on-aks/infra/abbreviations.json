@@ -1,0 +1,4 @@
+{
+  "containerServiceManagedClusters": "aks-",
+  "resourcesResourceGroups": "rg-"
+}

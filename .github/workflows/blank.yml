@@ -1,0 +1,25 @@
+# GitHub Actions Runner Controller on AKS - Example Workflow
+#
+# This workflow demonstrates using ARC self-hosted runners.
+# Copy this to .github/workflows/ in any repo where your runners are registered.
+
+name: ARC Runner Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-runner:
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner info
+        run: |
+          echo "Running on ARC self-hosted runner"
+          echo "Runner name: ${{ runner.name }}"
+          echo "Runner OS: ${{ runner.os }}"
+          uname -a
+
+      - name: Test job
+        run: echo "Hello from ARC on AKS!"

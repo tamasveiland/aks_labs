@@ -1,0 +1,35 @@
+apiVersion: actions.github.com/v1alpha1
+kind: AutoscalingListener
+metadata:
+  annotations:
+    actions.github.com/runner-spec-hash: 949dc77bc
+    actions.github.com/values-hash: 04ae876615d7f1bc039e7393635644c42c87f5c9c7027bf4bb8ee8986765c96      
+  creationTimestamp: "2026-03-05T15:16:20Z"
+  finalizers:
+  - autoscalinglistener.actions.github.com/finalizer
+  generation: 1
+  labels:
+    actions.github.com/organization: tamasveiland
+    actions.github.com/repository: aks_labs
+    actions.github.com/scale-set-name: arc-runner-set
+    actions.github.com/scale-set-namespace: arc-runners
+    app.kubernetes.io/component: runner-scale-set-listener
+    app.kubernetes.io/instance: arc-runner-set
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: arc-runner-set
+    app.kubernetes.io/part-of: gha-runner-scale-set
+    app.kubernetes.io/version: 0.13.1
+    helm.sh/chart: gha-rs-0.13.1
+  name: arc-runner-set-75dd985c-listener
+  namespace: arc-systems
+  resourceVersion: "66658"
+  uid: 77c780a8-452e-4f81-9ec7-878aef04d709
+spec:
+  autoscalingRunnerSetName: arc-runner-set
+  autoscalingRunnerSetNamespace: arc-runners
+  ephemeralRunnerSetName: arc-runner-set-5mxfm
+  githubConfigSecret: arc-runner-set-gha-rs-github-secret
+  githubConfigUrl: https://github.com/tamasveiland/aks_labs
+  image: ghcr.io/actions/gha-runner-scale-set-controller:0.13.1
+  maxRunners: 5
+  runnerScaleSetId: 1

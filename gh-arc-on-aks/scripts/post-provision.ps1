@@ -33,10 +33,12 @@ azd env get-values | ForEach-Object {
 # ---------------------------------------------------------------------------
 # Read azd outputs (now available as environment variables)
 # ---------------------------------------------------------------------------
-$resourceGroup   = $env:AZURE_RESOURCE_GROUP
-$clusterName     = $env:AZURE_AKS_CLUSTER_NAME
-$githubConfigUrl = $env:GITHUB_CONFIG_URL
-$githubPat       = $env:GITHUB_PAT   # Must be set by the user before running azd provision
+$resourceGroup          = $env:AZURE_RESOURCE_GROUP
+$clusterName            = $env:AZURE_AKS_CLUSTER_NAME
+$githubConfigUrl        = $env:GITHUB_CONFIG_URL
+$githubAppId            = $env:GITHUB_APP_ID
+$githubAppInstallationId = $env:GITHUB_APP_INSTALLATION_ID
+$githubAppPrivateKeyPath = $env:GITHUB_APP_PRIVATE_KEY_PATH   # Path to the .pem file
 
 # ---------------------------------------------------------------------------
 # Validation
@@ -52,13 +54,22 @@ if ([string]::IsNullOrWhiteSpace($githubConfigUrl)) {
     exit 0
 }
 
-if ([string]::IsNullOrWhiteSpace($githubPat)) {
-    Write-Warning "GITHUB_PAT is not set. Skipping ARC runner scale set installation."
-    Write-Warning "Create a GitHub PAT with the required scopes and set it:"
-    Write-Warning "  azd env set GITHUB_PAT <your-pat>"
+if ([string]::IsNullOrWhiteSpace($githubAppId) -or [string]::IsNullOrWhiteSpace($githubAppInstallationId) -or [string]::IsNullOrWhiteSpace($githubAppPrivateKeyPath)) {
+    Write-Warning "GitHub App credentials are not fully configured. Skipping ARC runner scale set installation."
+    Write-Warning "Set the following environment variables:"
+    Write-Warning "  azd env set GITHUB_APP_ID <app-id>"
+    Write-Warning "  azd env set GITHUB_APP_INSTALLATION_ID <installation-id>"
+    Write-Warning "  azd env set GITHUB_APP_PRIVATE_KEY_PATH <path-to-private-key.pem>"
     Write-Warning "Then re-run: azd hooks run postprovision"
     exit 0
 }
+
+if (-not (Test-Path $githubAppPrivateKeyPath)) {
+    Write-Error "Private key file not found at: $githubAppPrivateKeyPath"
+    exit 1
+}
+
+$githubAppPrivateKey = Get-Content -Path $githubAppPrivateKeyPath -Raw
 
 # ---------------------------------------------------------------------------
 # 1. Get AKS credentials
@@ -103,18 +114,17 @@ Write-Host "`n=== Installing ARC runner scale set ===" -ForegroundColor Cyan
 # Helm chart values reference:
 # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
 
+$valuesFile = Join-Path $PSScriptRoot "..\kubernetes\arc-runner-values.yaml"
+
 helm upgrade --install arc-runner-set `
     --namespace $arcRunnersNamespace `
+    --reset-values `
     oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set `
     --set githubConfigUrl="$githubConfigUrl" `
-    --set githubConfigSecret.github_token="$githubPat" `
-    --set "template.spec.tolerations[0].key=github-runner" `
-    --set "template.spec.tolerations[0].operator=Equal" `
-    --set-string "template.spec.tolerations[0].value=true" `
-    --set "template.spec.tolerations[0].effect=NoSchedule" `
-    --set-string "template.spec.nodeSelector.github-runner=true" `
-    --set maxRunners=5 `
-    --set minRunners=0 `
+    --set-string githubConfigSecret.github_app_id="$githubAppId" `
+    --set-string githubConfigSecret.github_app_installation_id="$githubAppInstallationId" `
+    --set githubConfigSecret.github_app_private_key="$githubAppPrivateKey" `
+    -f "$valuesFile" `
     --wait
 
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to install ARC runner scale set"; exit 1 }

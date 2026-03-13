@@ -30,7 +30,9 @@ done < <(azd env get-values)
 RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:?'AZURE_RESOURCE_GROUP is not set. This should be set by azd.'}"
 CLUSTER_NAME="${AZURE_AKS_CLUSTER_NAME:?'AZURE_AKS_CLUSTER_NAME is not set. This should be set by azd.'}"
 GITHUB_CONFIG_URL="${GITHUB_CONFIG_URL:-}"
-GITHUB_PAT="${GITHUB_PAT:-}"
+GITHUB_APP_ID="${GITHUB_APP_ID:-}"
+GITHUB_APP_INSTALLATION_ID="${GITHUB_APP_INSTALLATION_ID:-}"
+GITHUB_APP_PRIVATE_KEY_PATH="${GITHUB_APP_PRIVATE_KEY_PATH:-}"   # Path to the .pem file
 
 # ---------------------------------------------------------------------------
 # Validation
@@ -41,13 +43,22 @@ if [[ -z "$GITHUB_CONFIG_URL" ]]; then
     exit 0
 fi
 
-if [[ -z "$GITHUB_PAT" ]]; then
-    echo "WARNING: GITHUB_PAT is not set. Skipping ARC runner scale set installation."
-    echo "Create a GitHub PAT with the required scopes and set it:"
-    echo "  azd env set GITHUB_PAT <your-pat>"
+if [[ -z "$GITHUB_APP_ID" || -z "$GITHUB_APP_INSTALLATION_ID" || -z "$GITHUB_APP_PRIVATE_KEY_PATH" ]]; then
+    echo "WARNING: GitHub App credentials are not fully configured. Skipping ARC runner scale set installation."
+    echo "Set the following environment variables:"
+    echo "  azd env set GITHUB_APP_ID <app-id>"
+    echo "  azd env set GITHUB_APP_INSTALLATION_ID <installation-id>"
+    echo "  azd env set GITHUB_APP_PRIVATE_KEY_PATH <path-to-private-key.pem>"
     echo "Then re-run: azd hooks run postprovision"
     exit 0
 fi
+
+if [[ ! -f "$GITHUB_APP_PRIVATE_KEY_PATH" ]]; then
+    echo "ERROR: Private key file not found at: $GITHUB_APP_PRIVATE_KEY_PATH"
+    exit 1
+fi
+
+GITHUB_APP_PRIVATE_KEY=$(cat "$GITHUB_APP_PRIVATE_KEY_PATH")
 
 # ---------------------------------------------------------------------------
 # 1. Get AKS credentials
@@ -90,11 +101,13 @@ echo "ARC controller installed successfully."
 echo ""
 echo "=== Installing ARC runner scale set ==="
 
-helm upgrade --install arc-runner-set \
+helm upgrade --install arc-runner-set-org \
     --namespace "$ARC_RUNNERS_NAMESPACE" \
     oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
     --set githubConfigUrl="$GITHUB_CONFIG_URL" \
-    --set githubConfigSecret.github_token="$GITHUB_PAT" \
+    --set githubConfigSecret.github_app_id="$GITHUB_APP_ID" \
+    --set githubConfigSecret.github_app_installation_id="$GITHUB_APP_INSTALLATION_ID" \
+    --set githubConfigSecret.github_app_private_key="$GITHUB_APP_PRIVATE_KEY" \
     --set "template.spec.tolerations[0].key=github-runner" \
     --set "template.spec.tolerations[0].operator=Equal" \
     --set "template.spec.tolerations[0].value=true" \
@@ -102,6 +115,7 @@ helm upgrade --install arc-runner-set \
     --set "template.spec.nodeSelector.github-runner=true" \
     --set maxRunners=5 \
     --set minRunners=0 \
+    --set "labels[0]=arc-runner-set-org" \
     --wait
 
 echo "ARC runner scale set installed successfully."

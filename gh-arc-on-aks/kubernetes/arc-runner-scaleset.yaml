@@ -1,6 +1,9 @@
 # Example AutoScalingRunnerSet custom resource
 # This is a reference showing the resulting CR after Helm install.
 # Actual deployment is done via Helm in the post-provision script.
+#
+# Authentication uses a GitHub App (App ID, Installation ID, Private Key)
+# configured via Helm values — see scripts/post-provision.ps1.
 apiVersion: actions.github.com/v1alpha1
 kind: AutoscalingRunnerSet
 metadata:
@@ -8,7 +11,7 @@ metadata:
   namespace: arc-runners
 spec:
   githubConfigUrl: "${GITHUB_CONFIG_URL}"
-  githubConfigSecret: arc-github-secret
+  githubConfigSecret: arc-github-app-secret
   maxRunners: 5
   minRunners: 0
   template:

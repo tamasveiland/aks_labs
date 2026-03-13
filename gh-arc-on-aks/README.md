@@ -54,16 +54,92 @@ This lab deploys an AKS cluster configured to host **GitHub Actions Runner Contr
 - **Azure Developer CLI** (`azd`) >= 1.x installed
 - **kubectl** installed
 - **Helm** >= 3.x installed
-- **GitHub PAT** (Personal Access Token) with the following scopes:
-  - For **organization** runners: `admin:org`
-  - For **repository** runners: `repo`
+- **GitHub App** installed on your organization (or repository) with the **Self-hosted runners** (Read & Write) organization permission. See [Creating a GitHub App](#creating-a-github-app) below.
 
-### Creating a GitHub PAT
+### Creating a GitHub App
 
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click **Generate new token (classic)**
-3. Select the `admin:org` scope (for org-level runners) or `repo` scope (for repo-level runners)
-4. Copy the generated token — you'll need it during setup
+#### 1. Create the App
+
+1. Go to your **org Settings → Developer settings → GitHub Apps → New GitHub App**
+2. Fill in:
+   - **App name**: e.g., `arc-runner-controller`
+   - **Homepage URL**: any valid URL (e.g., your org's GitHub URL)
+3. Under **Webhook**, **uncheck Active** (ARC doesn't need webhooks)
+4. Under **Permissions**, set:
+
+   **Organization permissions:**
+   | Permission | Access |
+   |------------|--------|
+   | **Self-hosted runners** | **Read & Write** |
+
+   **Repository permissions:**
+   | Permission | Access |
+   |------------|--------|
+   | **Actions** | **Read-only** |
+   | **Administration** | **Read & Write** |
+   | **Metadata** | **Read-only** (automatically selected) |
+
+5. Under **Where can this GitHub App be installed?**, select **Only on this account**
+6. Click **Create GitHub App**
+
+#### 2. Get the credentials
+
+1. On the app's **General** page, note the **App ID**
+2. Scroll to **Private keys** → click **Generate a private key** → save the downloaded `.pem` file
+3. In the sidebar, click **Install App** → install it on your organization (select **All repositories** or specific ones)
+4. After installing, the URL will be `https://github.com/organizations/YOUR_ORG/settings/installations/XXXXX` — the number at the end is your **Installation ID**
+
+You will need three values for the setup:
+
+| Value | Where to find it |
+|-------|-------------------|
+| **App ID** | App's General settings page |
+| **Installation ID** | URL after installing the app on your org |
+| **Private key** (`.pem` file) | Downloaded when generating a private key |
+
+#### Enterprise-level GitHub App (optional)
+
+If you need runners across **multiple organizations** in a GitHub Enterprise, you can create the app at the enterprise level instead:
+
+1. Go to **Enterprise settings → Developer settings → GitHub Apps → New GitHub App**
+   (`https://github.com/enterprises/YOUR_ENTERPRISE/settings/apps/new`)
+2. Use the same permissions and webhook configuration as above
+3. After creating, **install the app** on each organization that needs runners
+
+Key differences from org-level apps:
+
+| Aspect | Organization App | Enterprise App |
+|--------|-----------------|----------------|
+| **Scope** | Single org | All orgs in the enterprise |
+| **Installation** | Installed on the creating org | Must be installed on each target org |
+| **Visibility** | Only the creating org | All orgs in the enterprise |
+
+> **Note:** Even with an enterprise-level app, the ARC `GITHUB_CONFIG_URL` must still point to a **specific organization** (or repo) — not the enterprise URL. Use the **Installation ID** corresponding to the org in your `GITHUB_CONFIG_URL`.
+
+#### Installing across multiple organizations
+
+There is **no API to programmatically install** a GitHub App — installation always requires user consent through the GitHub UI. However, you can automate parts of the workflow:
+
+| Task | Programmatic? | How |
+|------|--------------|-----|
+| **Create the app** | Yes | [REST API](https://docs.github.com/en/rest/apps/apps#create-a-github-app) or [manifest flow](https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/creating-a-github-app-from-a-manifest) |
+| **Install on an org** | **No** — requires UI consent | Share the link: `https://github.com/apps/YOUR_APP_NAME/installations/new` |
+| **List installations** | Yes | `GET /app/installations` (authenticated as the app) |
+| **Get Installation ID for an org** | Yes | `GET /orgs/{org}/installation` (authenticated as the app) |
+
+**Multi-org rollout steps:**
+
+1. Create the app at the **enterprise level** (or make an org-level app **public** under the app's Advanced settings)
+2. Share the install link with org admins: `https://github.com/apps/YOUR_APP_NAME/installations/new`
+3. Each org admin clicks through and selects which repos to grant access
+4. Programmatically discover each org's Installation ID:
+   ```bash
+   # Generate a JWT from your App ID + private key, then:
+   curl -H "Authorization: Bearer $JWT" \
+        -H "Accept: application/vnd.github+json" \
+        https://api.github.com/app/installations
+   ```
+5. For each org/AKS cluster, set the corresponding Installation ID via `azd env set GITHUB_APP_INSTALLATION_ID`
 
 ## Quick Start
 
@@ -84,8 +160,10 @@ azd env set GITHUB_CONFIG_URL "https://github.com/YOUR_ORG"
 # or for a specific repo:
 # azd env set GITHUB_CONFIG_URL "https://github.com/YOUR_ORG/YOUR_REPO"
 
-# Set the GitHub PAT
-azd env set GITHUB_PAT "ghp_your_token_here"
+# Set the GitHub App credentials
+azd env set GITHUB_APP_ID "12345"
+azd env set GITHUB_APP_INSTALLATION_ID "67890"
+azd env set GITHUB_APP_PRIVATE_KEY_PATH "/path/to/private-key.pem"
 
 # Grant your user AKS RBAC Cluster Admin on the data plane
 azd env set AZURE_PRINCIPAL_ID (az ad signed-in-user show --query id -o tsv)
@@ -237,7 +315,7 @@ kubectl logs -n arc-systems -l app.kubernetes.io/name=gha-runner-scale-set-contr
 ### Runners not appearing in GitHub
 
 - Verify `GITHUB_CONFIG_URL` is correct
-- Verify the PAT has correct scopes
+- Verify the GitHub App has the correct permissions and is installed on the org/repo
 - Check the listener logs:
   ```bash
   kubectl logs -n arc-systems -l actions.github.com/scale-set-name=arc-runner-set

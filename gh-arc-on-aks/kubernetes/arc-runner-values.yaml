@@ -1,0 +1,22 @@
+## Custom Kubernetes metadata labels applied to all resources created by this helm chart.
+labels:
+  arc-runner-set-org: "true"
+
+## The name of the runner scale set as it appears in GitHub.
+## This is the label workflows use in `runs-on:`. Defaults to the Helm release name if not set.
+runnerScaleSetName: "arc-runner-set-org"
+
+## Runner scale set configuration
+maxRunners: 5
+minRunners: 0
+
+## Pod template overrides
+template:
+  spec:
+    tolerations:
+      - key: "github-runner"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+    nodeSelector:
+      github-runner: "true"
